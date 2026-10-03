@@ -4,6 +4,7 @@ import { format, addWeeks, isSameWeek } from "date-fns";
 import api from "../api/axios.js";
 import WeeklyGrid from "../components/WeeklyGrid.jsx";
 import LoadingSpinner from "../components/LoadingSpinner.jsx";
+import AIWeeklyReport from "../components/AIWeeklyReport.jsx";
 import { weekKeysFor } from "../utils/dateHelpers.js";
 
 export default function Weekly() {
@@ -155,6 +156,8 @@ export default function Weekly() {
               </div>
             </div>
           </div>
+
+          <AIWeeklyReport />
 
           {habits.length === 0 ? (
             <div className="card p-10 text-center">

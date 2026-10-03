@@ -21,16 +21,18 @@ const buildWeeklyContext = async (userId) => {
     });
 
     const perHabit = habits.map((h) => {
-        const completed = logs.filter(
-            (l) => String(l.habitId) === String(h._id)
-        ).length;
+        const completedDates = new Set(
+            logs
+                .filter((l) => String(l.habitId) === String(h._id))
+                .map((l) => l.completedDate)
+        );
 
         return {
             name: h.name,
             category: h.category,
             frequency: h.frequency,
-            completedDays: completed,
-            targetDays: h.targetDays,
+            completedDays: completedDates.size,
+            targetDays: h.targetDays || 7,
         };
     });
 
@@ -67,15 +69,23 @@ Please write the personalised weekly report now.`;
             user: userMsg,
         });
 
-        if (ok && content) {
-            await AiInsight.create({
-                userId: req.user._id,
-                type: "weekly",
-                content,
+        if (!ok || !content) {
+            return res.status(502).json({
+                message: content || "Failed to generate weekly report with AI. Please try again.",
             });
         }
 
-        res.json({ content });
+        const insight = await AiInsight.create({
+            userId: req.user._id,
+            type: "weekly",
+            content,
+        });
+
+        res.json({
+            content,
+            createdAt: insight.createdAt,
+            _id: insight._id,
+        });
     } catch (err) {
         console.error("Weekly report error:", err);
         res.status(500).json({ message: err.message });

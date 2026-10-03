@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
   RefreshCw,
+  AlertCircle,
   Brain,
   Trophy,
   CalendarRange,
@@ -66,6 +67,7 @@ export default function Insights() {
   const [report, setReport] = useState("");
   const [reportGeneratedAt, setReportGeneratedAt] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState("");
 
   const thisWeek = useMemo(() => weekKeysFor(new Date()), []);
   const lastWeek = useMemo(
@@ -86,17 +88,25 @@ export default function Insights() {
         setHabits(habitsRes.data);
         setLogs(logsRes.data);
 
-        // try to load cached report for this week
+        // Fetch latest weekly report from API or cached
+        try {
+          const reportRes = await api.get("/ai/weekly-report/latest");
+          if (reportRes.data?.content) {
+            setReport(reportRes.data.content);
+            setReportGeneratedAt(new Date(reportRes.data.createdAt || reportRes.data.generatedAt || Date.now()));
+            return;
+          }
+        } catch {}
+
         const cached = localStorage.getItem(REPORT_CACHE_KEY(thisWeek[0].key));
         if (cached) {
           try {
             const { content, generatedAt } = JSON.parse(cached);
-            setReport(content);
-            setReportGeneratedAt(new Date(generatedAt));
+            if (content && !content.includes("Failed to generate")) {
+              setReport(content);
+              setReportGeneratedAt(new Date(generatedAt));
+            }
           } catch {}
-        } else {
-          // auto-generate on first visit this week
-          generateReport();
         }
       } finally {
         setLoading(false);
@@ -107,17 +117,21 @@ export default function Insights() {
 
   const generateReport = async () => {
     setReportLoading(true);
+    setReportError("");
     try {
       const res = await api.post("/ai/weekly-report");
-      setReport(res.data.content);
-      const now = new Date();
-      setReportGeneratedAt(now);
-      localStorage.setItem(
-        REPORT_CACHE_KEY(thisWeek[0].key),
-        JSON.stringify({ content: res.data.content, generatedAt: now })
-      );
-    } catch {
-      setReport("Failed to generate the report. Please try again.");
+      if (res.data?.content) {
+        setReport(res.data.content);
+        const now = res.data.createdAt ? new Date(res.data.createdAt) : new Date();
+        setReportGeneratedAt(now);
+        localStorage.setItem(
+          REPORT_CACHE_KEY(thisWeek[0].key),
+          JSON.stringify({ content: res.data.content, generatedAt: now })
+        );
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to generate the report. Please try again.";
+      setReportError(msg);
     } finally {
       setReportLoading(false);
     }
@@ -273,19 +287,47 @@ export default function Insights() {
           }}
         />
         <div className="relative">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
-              <Sparkles size={18} />
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-semibold">AI Weekly Report</div>
-              <div className="text-xs text-muted">
-                {reportGeneratedAt
-                  ? `Generated ${reportGeneratedAt.toLocaleString()}`
-                  : "Personalised review of your last 7 days"}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
+                <Sparkles size={18} />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-semibold">AI Weekly Report</div>
+                <div className="text-xs text-muted">
+                  {reportGeneratedAt
+                    ? `Generated ${reportGeneratedAt.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                    : "Personalised review of your last 7 days"}
+                </div>
               </div>
             </div>
+            {report && (
+              <button
+                onClick={generateReport}
+                disabled={reportLoading}
+                className="btn-ghost text-xs flex items-center gap-1.5"
+              >
+                <RefreshCw size={13} className={reportLoading ? "animate-spin" : ""} />
+                {reportLoading ? "Regenerating..." : "Regenerate"}
+              </button>
+            )}
           </div>
+
+          {reportError && (
+            <div className="mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{reportError}</span>
+              </div>
+              <button
+                onClick={generateReport}
+                disabled={reportLoading}
+                className="underline hover:no-underline font-medium ml-2"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {reportLoading && !report && (
             <div className="flex items-center gap-2 text-sm text-soft py-6">

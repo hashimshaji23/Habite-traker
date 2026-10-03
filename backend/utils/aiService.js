@@ -55,56 +55,45 @@ export const chatCompletion = async ({
         };
     }
 
-    const modelName = getModel();
+    const primaryModel = getModel();
+    // Prioritized list of models to try if the primary encounters 503 high demand or fails
+    const candidateModels = Array.from(
+        new Set([primaryModel, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-3.8-flash"])
+    );
 
-    try {
-        const res = await c.models.generateContent({
-            model: modelName,
-            contents: user,
-            config: {
-                systemInstruction: system,
-                temperature,
-            },
-        });
+    let lastError = null;
+    for (const modelName of candidateModels) {
+        try {
+            const res = await c.models.generateContent({
+                model: modelName,
+                contents: user,
+                config: {
+                    systemInstruction: system,
+                    temperature,
+                },
+            });
 
-        return {
-            ok: true,
-            content: (res.text || "").trim(),
-        };
-    } catch (err) {
-        console.error("AI error with model", modelName, ":", err.message);
-
-        // If the configured model failed with NOT_FOUND, try fallback to gemini-3.8-flash
-        if (modelName !== "gemini-3.8-flash") {
-            try {
-                console.log("Retrying with fallback model gemini-3.8-flash...");
-                const res = await c.models.generateContent({
-                    model: "gemini-3.8-flash",
-                    contents: user,
-                    config: {
-                        systemInstruction: system,
-                        temperature,
-                    },
-                });
-                return {
-                    ok: true,
-                    content: (res.text || "").trim(),
-                };
-            } catch (fallbackErr) {
-                console.error("Fallback AI error:", fallbackErr.message);
-            }
+            return {
+                ok: true,
+                content: (res.text || "").trim(),
+            };
+        } catch (err) {
+            lastError = err;
+            console.warn(`AI model ${modelName} encountered error: ${err.message}. Trying next fallback if available...`);
         }
-
-        return {
-            ok: false,
-            content: "AI request failed. Please try again later.",
-        };
     }
+
+    console.error("All AI candidate models failed. Last error:", lastError?.message);
+    return {
+        ok: false,
+        content: "AI request failed. Please try again later.",
+    };
 };
 
 export const SYSTEM_PROMPTS = {
     weekly:
-        "You are a warm, encouraging habit coach. Analyse the user's last 7 days of habit data and write a short personalised weekly insight. Identify their progress, consistency, strengths, and one or two areas for improvement. Keep the response positive and practical. Do not judge or shame the user. Return only the insight text, without headings or JSON.",
+        "You are an encouraging, supportive habit coach. Analyse the user's last 7 days of habit data and write a short personalised weekly report in clean Markdown. Include a headline, a summary of their consistency and progress, key strengths/wins with bullet points, and 1 or 2 positive, actionable suggestions for next week. Keep the tone warm, practical, and uplifting. Return only the Markdown content without JSON wrappers.",
+
 
     suggestion:
         "You are an expert habit coach. Based on the user's goals, productive time, and past struggles, suggest exactly 3 practical and personalised habit improvements. Return ONLY valid JSON matching this schema: {\"suggestions\": [{\"name\": string, \"description\": string, \"frequency\": \"daily\"|\"weekly\", \"category\": string, \"icon\": string, \"reason\": string}]}. Do not include markdown codeblocks or extra text outside the JSON.",
