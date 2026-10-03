@@ -173,9 +173,22 @@ export default function Habits() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            <option value="All">All categories</option>
+            <option
+              value="All"
+              className="text-[#111827] bg-white"
+              style={{ color: "#111827", backgroundColor: "#ffffff" }}
+            >
+              All categories
+            </option>
             {CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
+              <option
+                key={c}
+                value={c}
+                className="text-[#111827] bg-white"
+                style={{ color: "#111827", backgroundColor: "#ffffff" }}
+              >
+                {c}
+              </option>
             ))}
           </select>
           <div className="inline-flex rounded-xl glass overflow-hidden text-sm">

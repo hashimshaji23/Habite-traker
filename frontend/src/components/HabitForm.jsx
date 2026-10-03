@@ -61,7 +61,14 @@ export default function HabitForm({ initial, onSubmit, onCancel, submitting }) {
             onChange={set("category")}
           >
             {CATEGORIES.map((c) => (
-              <option key={c}>{c}</option>
+              <option
+                key={c}
+                value={c}
+                className="text-[#111827] bg-white"
+                style={{ color: "#111827", backgroundColor: "#ffffff" }}
+              >
+                {c}
+              </option>
             ))}
           </select>
         </div>
@@ -72,8 +79,20 @@ export default function HabitForm({ initial, onSubmit, onCancel, submitting }) {
             value={form.frequency}
             onChange={set("frequency")}
           >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
+            <option
+              value="daily"
+              className="text-[#111827] bg-white"
+              style={{ color: "#111827", backgroundColor: "#ffffff" }}
+            >
+              Daily
+            </option>
+            <option
+              value="weekly"
+              className="text-[#111827] bg-white"
+              style={{ color: "#111827", backgroundColor: "#ffffff" }}
+            >
+              Weekly
+            </option>
           </select>
         </div>
       </div>
