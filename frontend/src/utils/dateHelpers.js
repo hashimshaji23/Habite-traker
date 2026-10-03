@@ -57,7 +57,7 @@ export const streakFromKeys = (keys) => {
       cursor = subDays(cursor, 1);
     }
   }
-  const sorted = [...keys].sort();
+  const sorted = [...new Set(keys)].sort();
   let longest = 0;
   let run = 0;
   let prev = null;

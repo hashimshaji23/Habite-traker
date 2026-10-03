@@ -141,8 +141,9 @@ export const getHabitStats = async (req, res) => {
                 )
             ) + 1;
 
-        const completionRate = Math.round(
-            (logs.length / totalDays) * 100
+        const completionRate = Math.min(
+            100,
+            Math.max(0, Math.round((logs.length / totalDays) * 100))
         );
 
         // Monthly breakdown

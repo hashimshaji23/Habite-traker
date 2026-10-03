@@ -135,7 +135,7 @@ export default function TodayHabitCard({
         onClick={onToggle}
         className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition ${completed
           ? "bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-500/40 animate-pop"
-          : "bg-brand-100 border-2 border-border-brand-400 text-brand-400 hover:border-brand-400 hover:text-brand-400"
+          : "glass border-2 border-[var(--input-border)] text-transparent hover:border-brand-500 hover:text-brand-500/60 hover:bg-brand-500/10"
           }`}
         aria-label={completed ? "Mark incomplete" : "Mark complete"}
       >

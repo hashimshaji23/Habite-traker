@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sun, X } from "lucide-react";
 import api from "../api/axios.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { todayKey } from "../utils/dateHelpers.js";
 import Markdown from "./Markdown.jsx";
 
 export default function MorningMotivation() {
@@ -12,7 +13,7 @@ export default function MorningMotivation() {
 
   useEffect(() => {
     if (!user?.morningMotivation) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayKey();
     const seen = localStorage.getItem("morning-seen");
     if (seen === today) return;
     setLoading(true);

@@ -26,20 +26,26 @@ const components = {
       {...props}
     />
   ),
-  code: ({ inline, ...props }) =>
-    inline ? (
+  code: ({ className, children, ...props }) => {
+    const isBlock = String(children).includes("\n") || (className && className.includes("language-"));
+    return isBlock ? (
+      <code
+        className="block rounded-lg p-3 text-[0.85em] font-mono overflow-x-auto my-2"
+        style={{ background: "var(--chip-bg)" }}
+        {...props}
+      >
+        {children}
+      </code>
+    ) : (
       <code
         className="px-1.5 py-0.5 rounded text-[0.85em] font-mono"
         style={{ background: "var(--chip-bg)" }}
         {...props}
-      />
-    ) : (
-      <code
-        className="block rounded-lg p-3 text-[0.85em] font-mono overflow-x-auto"
-        style={{ background: "var(--chip-bg)" }}
-        {...props}
-      />
-    ),
+      >
+        {children}
+      </code>
+    );
+  },
   a: ({ href, ...rest }) => (
     <a
       href={href}

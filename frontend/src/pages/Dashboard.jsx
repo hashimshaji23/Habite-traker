@@ -54,10 +54,9 @@ export default function Dashboard() {
       setHeatmap(heatRes.data);
 
       const byId = {};
-      const start90 = new Date();
-      start90.setDate(start90.getDate() - 89);
-      const s90 = start90.toISOString().slice(0, 10);
-      const e90 = new Date().toISOString().slice(0, 10);
+      const days90 = last90Days();
+      const s90 = days90[0];
+      const e90 = days90[days90.length - 1];
       const allRange = await api.get("/logs/range", {
         params: { start: s90, end: e90 },
       });
