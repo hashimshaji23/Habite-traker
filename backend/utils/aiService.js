@@ -1,17 +1,17 @@
 import "dotenv/config";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 
 let client = null;
 const getClient = () => {
     if (client) return client;
-    const key = process.env.GEMINI_API_KEY;
+    const key = process.env.GROQ_API_KEY;
     if (!key) return null;
-    client = new GoogleGenAI({ apiKey: key });
+    client = new Groq({ apiKey: key });
     return client;
 };
 
-export const getModel = () => process.env.GEMINI_MODEL || "gemini-3.8-flash";
-export const isAIEnabled = () => !!process.env.GEMINI_API_KEY;
+export const getModel = () => process.env.GROQ_MODEL || "qwen/qwen3.8-27b";
+export const isAIEnabled = () => !!process.env.GROQ_API_KEY;
 
 export const parseJSON = (text) => {
     if (!text) return null;
@@ -51,35 +51,35 @@ export const chatCompletion = async ({
         return {
             ok: false,
             content:
-                "AI features are disabled - set GEMINI_API_KEY in the backend .env to enable real AI responses.",
+                "AI features are disabled - set GROQ_API_KEY in the backend .env to enable real AI responses.",
         };
     }
 
     const primaryModel = getModel();
-    // Prioritized list of models to try if the primary encounters 503 high demand or fails
+    // Fallback models if primary is unavailable
     const candidateModels = Array.from(
-        new Set([primaryModel, "gemini-3.7-flash", "gemini-3.5-flash", "gemini-flash-lite-latest", "gemini-3.8-flash"])
+        new Set([primaryModel, "qwen/qwen3.8-27b", "openai/gpt-oss-20b", "openai/gpt-oss-120b"])
     );
 
     let lastError = null;
     for (const modelName of candidateModels) {
         try {
-            const res = await c.models.generateContent({
+            const res = await c.chat.completions.create({
                 model: modelName,
-                contents: user,
-                config: {
-                    systemInstruction: system,
-                    temperature,
-                },
+                messages: [
+                    { role: "system", content: system },
+                    { role: "user",   content: user },
+                ],
+                temperature,
             });
 
             return {
                 ok: true,
-                content: (res.text || "").trim(),
+                content: (res.choices[0]?.message?.content || "").trim(),
             };
         } catch (err) {
             lastError = err;
-            console.warn(`AI model ${modelName} encountered error: ${err.message}. Trying next fallback if available...`);
+            console.warn(`AI model ${modelName} encountered error: ${err.message}. Trying next fallback...`);
         }
     }
 
